@@ -1,5 +1,30 @@
 # dspy-prompt-optimizer
-Агентская система - оптимизация промптов с использованием DSPy паттернов 
+Агентская система - оптимизация промптов с использованием DSPy паттернов
+
+# Быстрый старт
+-----------------
+## Запуск Redis через Docker
+
+```bash
+docker compose up -d
+```
+
+Проверить, что Redis запущен:
+```bash
+docker exec -it dspy-prompt-optimizer-redis redis-cli ping
+# Должен вернуть: PONG
+```
+
+Остановка Redis:
+```bash
+docker compose down
+```
+
+## Запуск приложения
+
+```bash
+python agent_state_preservation.py
+```
 
 # Проблема
 ------------------

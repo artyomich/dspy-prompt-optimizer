@@ -8,6 +8,7 @@ Stack: Python, Redis, PostgreSQL, DSPy patterns
 import json
 import hashlib
 import logging
+import math
 from typing import Dict, List, Any, Optional
 
 import redis
@@ -153,7 +154,7 @@ class DatabaseStateManager:
 
     def __init__(self, db_config: Dict[str, Any]):
         self.db_config = db_config
-        self.conn = None
+        self.conn: Optional[psycopg2.extensions.connection] = None
 
     def connect(self):
         self.conn = psycopg2.connect(**self.db_config)
@@ -165,6 +166,9 @@ class DatabaseStateManager:
 
     def create_tables(self):
         """Create tables if they don't exist. Run once at startup."""
+        if not self.conn:
+            self.connect()
+        assert self.conn is not None
         cursor = self.conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS agent_sessions (
@@ -220,6 +224,7 @@ class DatabaseStateManager:
         """Upsert session + append message + agent states."""
         if not self.conn:
             self.connect()
+        assert self.conn is not None
         cursor = self.conn.cursor()
         try:
             # Upsert session
@@ -288,6 +293,7 @@ class DatabaseStateManager:
         """Load full session from PostgreSQL."""
         if not self.conn:
             self.connect()
+        assert self.conn is not None
         cursor = self.conn.cursor()
         try:
             cursor.execute("""
@@ -337,6 +343,7 @@ class DatabaseStateManager:
         """Cosine similarity search over stored context vectors."""
         if not self.conn:
             self.connect()
+        assert self.conn is not None
         cursor = self.conn.cursor()
         try:
             cursor.execute("""
@@ -529,11 +536,12 @@ def main():
     # NOTE: This will fail if Redis is not running.
     # For demo we just show the call structure.
     try:
-        r = redis.Redis(host="localhost", port=6379, db=0, decode=True)
+        r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True, socket_timeout=5, socket_connect_timeout=5)
         r.ping()
         orchestrator = AgentOrchestrator(r, {
             "dbname": "agents", "user": "postgres",
-            "password": "postgres", "host": "localhost"
+            "password": "postgres", "host": "localhost",
+            "connect_timeout": 5
         })
         result = orchestrator.process_request({
             "user_id": "user_abc123",
@@ -541,8 +549,9 @@ def main():
             "message": "Напиши функцию парсинга JSON"
         })
         print(f"  ✅ Response keys: {list(result.keys())}")
-    except redis.ConnectionError:
-        print("  ⚠️  Redis not available — skipping live orchestrator test")
+    except (redis.ConnectionError, redis.TimeoutError, TimeoutError,
+             psycopg2.OperationalError) as e:
+        print(f"  ⚠️  PostgreSQL not available ({type(e).__name__}) — skipping live orchestrator test")
 
     # --- Example 6: DSPy optimizer stub ---
     print("\n[6] DSPy optimizer (stub)")
