@@ -3,21 +3,41 @@
 
 # Быстрый старт
 -----------------
-## Запуск Redis через Docker
+## Запуск сервисов (Redis + PostgreSQL) через Docker
 
 ```bash
 docker compose up -d
 ```
 
-Проверить, что Redis запущен:
+Запуск только PostgreSQL:
+```bash
+docker compose up -d postgres
+```
+
+Проверить, что сервисы запущены:
+```bash
+docker compose ps
+```
+
+Проверить Redis:
 ```bash
 docker exec -it dspy-prompt-optimizer-redis redis-cli ping
 # Должен вернуть: PONG
 ```
 
-Остановка Redis:
+Проверить PostgreSQL:
+```bash
+docker exec -it dspy-prompt-optimizer-postgres psql -U postgres -d agents -c '\dt'
+```
+
+Остановка всех сервисов:
 ```bash
 docker compose down
+```
+
+Остановка PostgreSQL (Redis остаётся):
+```bash
+docker compose down postgres
 ```
 
 ## Запуск приложения

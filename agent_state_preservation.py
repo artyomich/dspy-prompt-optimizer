@@ -217,6 +217,11 @@ class DatabaseStateManager:
             CREATE INDEX IF NOT EXISTS idx_states_session
             ON agent_states(session_id)
         """)
+        # Unique index for agent_context upsert
+        cursor.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_agent_context_session
+            ON agent_context(session_id)
+        """)
         self.conn.commit()
         cursor.close()
 
@@ -386,6 +391,8 @@ class AgentOrchestrator:
     def create_session(self, user_id: str,
                        session_id: str) -> SessionState:
         """Create a new session (fails if already exists)."""
+        # Ensure tables exist
+        self.db_manager.create_tables()
         if session_id in self.active_sessions:
             raise ValueError(f"Session {session_id} already exists")
         session = SessionState(user_id, session_id)
@@ -424,6 +431,9 @@ class AgentOrchestrator:
         user_id = request.get("user_id", "anonymous")
         session_id = request.get("session_id", f"session_{user_id}")
         message = request.get("message", "")
+
+        # Ensure tables exist
+        self.db_manager.create_tables()
 
         session = self.get_session(session_id)
         if not session:
@@ -532,16 +542,15 @@ def main():
     print(f"  After new message → version: {session.state_version}")
 
     # --- Example 5: Orchestrator ---
-    print("\n[5] Orchestrator process_request (no Redis/PG)")
-    # NOTE: This will fail if Redis is not running.
-    # For demo we just show the call structure.
+    print("\n[5] Orchestrator process_request (with Redis + PostgreSQL)")
     try:
         r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True, socket_timeout=5, socket_connect_timeout=5)
         r.ping()
         orchestrator = AgentOrchestrator(r, {
             "dbname": "agents", "user": "postgres",
             "password": "postgres", "host": "localhost",
-            "connect_timeout": 5
+            "port": 5432,
+            "connect_timeout": 10
         })
         result = orchestrator.process_request({
             "user_id": "user_abc123",
@@ -549,9 +558,10 @@ def main():
             "message": "Напиши функцию парсинга JSON"
         })
         print(f"  ✅ Response keys: {list(result.keys())}")
+        print(f"  ✅ Agent responses: {len(result['agent_responses'])}")
     except (redis.ConnectionError, redis.TimeoutError, TimeoutError,
              psycopg2.OperationalError) as e:
-        print(f"  ⚠️  PostgreSQL not available ({type(e).__name__}) — skipping live orchestrator test")
+        print(f"  ⚠️  Service not available ({type(e).__name__}) — skipping live orchestrator test")
 
     # --- Example 6: DSPy optimizer stub ---
     print("\n[6] DSPy optimizer (stub)")
