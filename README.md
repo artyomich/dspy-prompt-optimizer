@@ -33,6 +33,20 @@
 
 ## 📊 Диаграммы C1-C4
 
+Диаграммы построены по методологии C4 (https://c4model.com) и сгенерированы через js-plantuml.
+
+Конвертация puml → jpg:
+```bash
+# Установить зависимости
+npm install -g plantuml-encoder sharp
+
+# Сгенерировать из puml через PlantUML Server
+plantuml -tpng docs/*.puml && for f in docs/*.png; do convert "$f" "${f%.png}.jpg"; done
+
+# Или через js-plantuml:
+node scripts/convert-diagrams.js
+```
+
 ### C1 — Context Diagram (Контекстная диаграмма)
 
 Показывает взаимодействие системы с внешними акторами: пользователями и администраторами.
