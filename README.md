@@ -57,7 +57,7 @@ for f in docs/*.png; do convert "$f" "${f%.png}.jpg"; done
 - **Admin** — администратор, контролирующий состояние системы
 - **DSPy Prompt Optimizer System** — граница нашей системы
 
-![C1 Context Diagram](docs/C1_context.png)
+![C1 Context Diagram](docs/C1_context.jpg)
 
 ---
 
@@ -75,7 +75,7 @@ for f in docs/*.png; do convert "$f" "${f%.png}.jpg"; done
 | PostgreSQL | PostgreSQL 16 | Долговременное хранение |
 | DSPy Engine | dspy-ai | Оптимизация промптов |
 
-![C2 Container Diagram](docs/C2_container.png)
+![C2 Container Diagram](docs/C2_container.jpg)
 
 ---
 
@@ -97,7 +97,7 @@ for f in docs/*.png; do convert "$f" "${f%.png}.jpg"; done
 - **PostgresSessionRepository** — хранение в PostgreSQL
 - **PromptCandidate** — кандидат оптимизации промпта
 
-![C3 Component Diagram](docs/C3_component.png)
+![C3 Component Diagram](docs/C3_component.jpg)
 
 ---
 
@@ -137,17 +137,17 @@ dspy-prompt-optimizer/
 │   └── test_domain_models.py        # 35 тестов
 │
 ├── docs/                            # Документация
-│   ├── C1_context.puml / .png       # C1 диаграмма
-│   ├── C2_container.puml / .png     # C2 диаграмма
-│   ├── C3_component.puml / .png     # C3 диаграмма
-│   └── C4_code.puml / .png          # C4 диаграмма
+│   ├── C1_context.puml / .png / .jpg  # C1 диаграмма
+│   ├── C2_container.puml / .png / .jpg  # C2 диаграмма
+│   ├── C3_component.puml / .png / .jpg  # C3 диаграмма
+│   └── C4_code.puml / .png / .jpg     # C4 диаграмма
 │
 ├── .env.example                     # Шаблон конфигурации
 ├── pyproject.toml                   # Конфигурация проекта
 └── README.md                        # Этот файл
 ```
 
-![C4 Code Diagram](docs/C4_code.png)
+![C4 Code Diagram](docs/C4_code.jpg)
 
 ## 🚀 Быстрый старт
 
