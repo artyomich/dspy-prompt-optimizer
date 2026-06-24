@@ -1,0 +1,91 @@
+@startuml C3_component
+title C3: Component Diagram - Application Service Layer
+
+rectangle "Application Service Layer" as app {
+
+  package "AgentOrchestrator" as orchestrator {
+    [AgentOrchestrator] as orchestrator_main
+    [RequestContext] as req_ctx
+    [ProcessingResult] as proc_res
+  }
+
+  package "Prompt Optimization" as prompt_opt {
+    [DSPyPromptOptimizer] as dspy_opt
+    [PromptCandidate] as pcand
+  }
+
+  package "Session Management" as sess_mgmt {
+    [SessionRepository] as sess_repo
+    [CompositeSessionRepository] as composite_repo
+  }
+
+}
+
+rectangle "Domain Layer" as domain {
+
+  package "Session Subdomain" as sess_sub {
+    [SessionState] as sess_state
+    [Message] as msg
+    [MessageRole] as msg_role
+    [AgentState] as agent_state
+    [ContextVectorizer] as cv
+  }
+
+  package "Agent Subdomain" as agent_sub {
+    [Agent] as agent
+    [AgentType] as agent_type
+    [AgentTask] as agent_task
+    [AgentRegistry] as agent_reg
+  }
+
+}
+
+rectangle "Infrastructure Layer" as infra {
+
+  package "Redis Storage" as redis_store {
+    [RedisSessionRepository] as redis_repo
+  }
+
+  package "PostgreSQL Storage" as pg_store {
+    [PostgresSessionRepository] as pg_repo
+  }
+
+}
+
+' Relationships
+orchestrator_main --> sess_repo : uses
+orchestrator_main --> dspy_opt : uses
+orchestrator_main --> agent_reg : uses
+orchestrator_main --> req_ctx : creates
+proc_res <-- orchestrator_main : returns
+
+composite_repo --> sess_repo : implements
+redis_repo --> sess_repo : implements
+pg_repo --> sess_repo : implements
+
+composite_repo --> redis_repo : delegates
+composite_repo --> pg_repo : delegates
+
+sess_state --> msg : has 0..*
+sess_state --> agent_state : has 0..*
+sess_state --> cv : uses
+
+agent --> agent_task : has 0..*
+agent --> agent_type : has 1
+
+agent_reg --> agent : manages
+
+note right of pg_repo
+  Tables:
+  - agent_sessions
+  - agent_messages
+  - agent_states
+  - agent_context
+end note
+
+note right of redis_repo
+  Key: agent_session:{id}
+  TTL: 7 days
+end note
+
+@enduml

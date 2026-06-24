@@ -1,0 +1,106 @@
+@startuml C4_code
+title C4: Code Diagram - Project Source Structure
+
+rectangle "dspy-prompt-optimizer Project" as proj {
+
+  package "domain/" as domain {
+
+    package "session/" as sess {
+      [SessionState] as SS
+      [Message] as M
+      [MessageRole] as MR
+      [AgentState] as AS
+      [ContextVectorizer] as CV
+      [SessionRepository] as SR
+    }
+
+    package "agent/" as agent {
+      [Agent] as A
+      [AgentType] as AT
+      [AgentTask] as ATk
+      [AgentRegistry] as AR
+    }
+
+  }
+
+  package "application/" as app {
+
+    package "services/" as svc {
+      [AgentOrchestrator] as AO
+      [RequestContext] as RC
+      [ProcessingResult] as PR
+    }
+
+  }
+
+  package "infrastructure/" as infra {
+
+    package "storage/" as stor {
+      [RedisSessionRepository] as RSR
+      [PostgresSessionRepository] as PSR
+      [CompositeSessionRepository] as CSR
+    }
+
+    package "dspy/" as dspy {
+      [DSPyPromptOptimizer] as DPO
+      [PromptCandidate] as PC
+    }
+
+  }
+
+  package "api/" as api {
+    [main.py] as main
+  }
+
+  package "tests/" as tests {
+    [test_domain_models.py] as TDM
+  }
+
+}
+
+' Dependencies
+AO --> SR : depends on (interface)
+AO --> DPO : uses
+AO --> AR : uses
+AO --> RC : creates
+PR <-- AO : returns
+
+CSR --> SR : implements
+RSR --> SR : implements
+PSR --> SR : implements
+
+CSR --> RSR : delegates
+CSR --> PSR : delegates
+
+SS --> M : contains
+SS --> AS : contains
+SS --> CV : uses
+
+A --> AT : has
+A --> ATk : contains
+
+AR --> A : manages
+
+main --> AO : calls
+main --> DPO : calls
+
+TDM --> SS : tests
+TDM --> A : tests
+TDM --> AR : tests
+
+legend right
+  |*Domain Layer*|
+  | SessionState, Message, Agent |
+  | AgentRegistry, AgentType |
+  |*Application Layer*|
+  | AgentOrchestrator |
+  |*Infrastructure Layer*|
+  | Redis/PostgreSQL repos |
+  | DSPy optimizer |
+  |*API Layer*|
+  | main.py entry point |
+  |*Tests*|
+  | pytest unit tests |
+end legend
+
+@enduml

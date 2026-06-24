@@ -1,0 +1,22 @@
+@startuml C1_context
+title C1: Context Diagram - DSPy Prompt Optimizer
+
+rectangle "User" as user
+rectangle "Admin" as admin
+
+rectangle "DSPy Prompt Optimizer System" as system {
+}
+
+user --> system : Использует API\n(REST/gRPC)
+admin --> system : Конфигурация\nМониторинг
+
+system --> user : Результаты\nСессии
+system --> admin : Логи\nМетрики
+
+note right of system
+  Система оптимизации промптов
+  на основе DSPy паттернов
+  с DDD архитектурой
+end note
+
+@enduml

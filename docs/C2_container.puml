@@ -1,0 +1,44 @@
+@startuml C2_container
+title C2: Container Diagram - DSPy Prompt Optimizer
+
+rectangle "User" as user
+rectangle "Admin" as admin
+
+rectangle "Web API\n(FastAPI)" as api
+rectangle "Application Service\n(AgentOrchestrator)" as app_svc
+rectangle "Agent Workers\n(Agent Pool)" as agents
+
+database "Redis Cache" as redis
+database "PostgreSQL\n(agents DB)" as postgres
+database "DSPy Engine\n(Prompt Optimization)" as dspy
+
+user --> api : HTTP/REST
+admin --> api : Мониторинг
+
+api --> app_svc : Вызовы
+app_svc --> redis : Кэширование\nсессий
+app_svc --> postgres : Персистентность
+app_svc --> agents : Распределение
+agents --> dspy : Оптимизация
+agents --> redis : Чтение/запись
+agents --> postgres : Чтение/запись
+
+note bottom of redis
+  TTL: 7 дней
+  Fast read/write
+end note
+
+note bottom of postgres
+  Таблицы:
+  - agent_sessions
+  - agent_messages
+  - agent_states
+  - agent_context
+end note
+
+note right of dspy
+  Mipro Teleprompter
+  Metric-based opt.
+end note
+
+@enduml
