@@ -233,15 +233,83 @@ class SessionState:
 
     @classmethod
     def deserialize(cls, data: Dict[str, Any]) -> "SessionState":
-        """Deserialize a session state from a dictionary."""
-        obj = cls(data["user_id"], data["session_id"])
-        obj._created_at = datetime.fromisoformat(data["created_at"])
-        obj._last_updated = datetime.fromisoformat(data["last_updated"])
-        obj._messages = [Message.from_dict(m) for m in data["messages"]]
-        obj._agent_states = {
-            k: AgentState.from_dict(v) for k, v in data.get("agent_states", {}).items()
-        }
-        obj._context_vector = data.get("context_vector", [])
-        obj._state_version = data.get("state_version", 0)
-        obj._is_active = data.get("is_active", True)
+        """Deserialize a session state from a dictionary.
+        
+        Validates all fields to prevent injection attacks and data corruption.
+        """
+        # Validate required fields
+        required_fields = ["user_id", "session_id", "created_at", "last_updated", "messages"]
+        for field in required_fields:
+            if field not in data:
+                raise ValueError(f"Missing required field: {field}")
+        
+        # Validate user_id and session_id
+        user_id = data["user_id"]
+        session_id = data["session_id"]
+        if not isinstance(user_id, str) or not user_id:
+            raise ValueError("user_id must be a non-empty string")
+        if not isinstance(session_id, str) or not session_id:
+            raise ValueError("session_id must be a non-empty string")
+        
+        obj = cls(user_id, session_id)
+        
+        # Validate timestamps
+        created_at_str = data["created_at"]
+        last_updated_str = data["last_updated"]
+        if not isinstance(created_at_str, str):
+            raise ValueError("created_at must be a string")
+        if not isinstance(last_updated_str, str):
+            raise ValueError("last_updated must be a string")
+        obj._created_at = datetime.fromisoformat(created_at_str)
+        obj._last_updated = datetime.fromisoformat(last_updated_str)
+        
+        # Validate and deserialize messages
+        messages_data = data["messages"]
+        if not isinstance(messages_data, list):
+            raise ValueError("messages must be a list")
+        obj._messages = [Message.from_dict(m) for m in messages_data]
+        
+        # Validate and deserialize agent states safely
+        agent_states_data = data.get("agent_states", {})
+        if not isinstance(agent_states_data, dict):
+            raise ValueError("agent_states must be a dictionary")
+        obj._agent_states = {}
+        for k, v in agent_states_data.items():
+            if not isinstance(k, str):
+                raise ValueError(f"agent_states key must be a string, got {type(k)}")
+            if not isinstance(v, dict):
+                raise ValueError(f"agent_states value must be a dict, got {type(v)}")
+            # Validate that v has expected keys
+            expected_keys = {"agent_id", "status", "tasks", "updated_at"}
+            if not expected_keys.issubset(v.keys()):
+                raise ValueError(f"agent_states entry missing required keys: {expected_keys - set(v.keys())}")
+            obj._agent_states[k] = AgentState.from_dict(v)
+        
+        # Validate context_vector dimensionality
+        context_vector = data.get("context_vector", [])
+        if not isinstance(context_vector, list):
+            raise ValueError("context_vector must be a list")
+        if len(context_vector) > 0 and len(context_vector) != ContextVectorizer.VECTOR_DIM:
+            raise ValueError(
+                f"context_vector dimension mismatch: expected {ContextVectorizer.VECTOR_DIM}, "
+                f"got {len(context_vector)}"
+            )
+        # Validate all values are numeric
+        for i, val in enumerate(context_vector):
+            if not isinstance(val, (int, float)):
+                raise ValueError(f"context_vector[{i}] must be numeric, got {type(val)}")
+        obj._context_vector = [float(x) for x in context_vector]
+        
+        # Validate state_version
+        state_version = data.get("state_version", 0)
+        if not isinstance(state_version, int):
+            raise ValueError("state_version must be an integer")
+        obj._state_version = state_version
+        
+        # Validate is_active
+        is_active = data.get("is_active", True)
+        if not isinstance(is_active, bool):
+            raise ValueError("is_active must be a boolean")
+        obj._is_active = is_active
+        
         return obj

@@ -33,72 +33,121 @@
 
 ## 📊 Диаграммы C1-C4
 
-Диаграммы построены по методологии C4 (https://c4model.com) и сгенерированы через js-plantuml.
+Проект использует методологию C4 (https://c4model.com) для описания архитектуры на всех уровнях детализации.
 
-Конвертация puml → jpg:
+Диаграммы хранятся в формате PlantUML (`.puml`) и PNG. Для генерации из `.puml`:
+
 ```bash
-# Установить зависимости
+# Установка plantuml
 npm install -g plantuml-encoder sharp
 
-# Сгенерировать из puml через PlantUML Server
-plantuml -tpng docs/*.puml && for f in docs/*.png; do convert "$f" "${f%.png}.jpg"; done
+# Генерация PNG из puml
+plantuml -tpng docs/*.puml
 
-# Или через js-plantuml:
-node scripts/convert-diagrams.js
+# Конвертация PNG → JPG (опционально)
+for f in docs/*.png; do convert "$f" "${f%.png}.jpg"; done
 ```
 
 ### C1 — Context Diagram (Контекстная диаграмма)
 
-Показывает взаимодействие системы с внешними акторами: пользователями и администраторами.
+**Назначение:** Показывает систему как единое целое и её взаимодействие с внешними акторами (пользователями, администраторами, внешними сервисами).
 
-![C1 Context Diagram](docs/C1_context.jpg)
-
-**Элементы:**
-- **User** — внешний пользователь, использующий API
-- **Admin** — администратор, контролирующий систему
+**Что отображается:**
+- **User** — внешний пользователь, отправляющий запросы через API
+- **Admin** — администратор, контролирующий состояние системы
 - **DSPy Prompt Optimizer System** — граница нашей системы
+
+![C1 Context Diagram](docs/C1_context.png)
+
+---
 
 ### C2 — Container Diagram (Контейнерная диаграмма)
 
-Показывает основные компоненты системы и их взаимодействие:
-
-![C2 Container Diagram](docs/C2_container.jpg)
+**Назначение:** Показывает внутренние контейнеры системы: веб-приложения, базы данных, микросервисы.
 
 **Контейнеры:**
-- **Web API (FastAPI)** — REST API для внешних клиентов
-- **Application Service (AgentOrchestrator)** — прикладная логика
-- **Agent Workers** — пул специализированных агентов
-- **Redis Cache** — кэш сессий (TTL: 7 дней)
-- **PostgreSQL** — долговременное хранение
-- **DSPy Engine** — оптимизация промптов
+| Контейнер | Технология | Роль |
+|-----------|-----------|------|
+| Web API | FastAPI / uvicorn | REST API для клиентов |
+| Application Service | Python (AgentOrchestrator) | Прикладная логика |
+| Agent Workers | Python (Agent pool) | Пул специализированных агентов |
+| Redis Cache | Redis 7 | Кэш сессий (TTL: 7 дней) |
+| PostgreSQL | PostgreSQL 16 | Долговременное хранение |
+| DSPy Engine | dspy-ai | Оптимизация промптов |
+
+![C2 Container Diagram](docs/C2_container.png)
+
+---
 
 ### C3 — Component Diagram (Диаграмма компонентов)
 
-Детализация внутренних компонентов Application и Domain слоёв:
+**Назначение:** Детализация внутренних компонентов каждого контейнера.
 
-![C3 Component Diagram](docs/C3_component.jpg)
+**Компоненты Application Layer:**
+- **AgentOrchestrator** — центральный оркестратор, управляет жизненным циклом сессий
+- **DSPyPromptOptimizer** — оптимизация промптов через DSPy
 
-**Компоненты:**
-- **AgentOrchestrator** — центральный оркестратор
-- **DSPyPromptOptimizer** — оптимизация промптов
-- **SessionRepository** — абстракция хранилища
+**Компоненты Domain Layer:**
+- **SessionRepository** — абстракция хранилища сессий
 - **CompositeSessionRepository** — composite Redis + PostgreSQL
 - **SessionState, Message, Agent** — доменные модели
 
+**Компоненты Infrastructure Layer:**
+- **RedisSessionRepository** — хранение в Redis
+- **PostgresSessionRepository** — хранение в PostgreSQL
+- **PromptCandidate** — кандидат оптимизации промпта
+
+![C3 Component Diagram](docs/C3_component.png)
+
+---
+
 ### C4 — Code Diagram (Диаграмма кода)
 
-Структура исходного кода проекта и зависимости между модулями:
+**Назначение:** Показывает структуру исходного кода и зависимости между модулями.
 
-![C4 Code Diagram](docs/C4_code.jpg)
+**Структура проекта:**
+```
+dspy-prompt-optimizer/
+├── domain/                          # Доменная область
+│   ├── session/                     # Сессии диалогов
+│   │   ├── models.py                # SessionState, Message, AgentState
+│   │   ├── repository.py            # SessionRepository (абстракция)
+│   └── agent/                       # Домены агентов
+│       ├── models.py                # Agent, AgentType, AgentRegistry
+│
+├── domain/models/                   # Валидация и DTO
+│   ├── validation.py                # Pydantic модели
+│
+├── application/                     # Прикладной слой
+│   └── services/
+│       └── orchestrator.py          # AgentOrchestrator, AuditLogger
+│
+├── infrastructure/                  # Инфраструктура
+│   ├── storage/                     # Хранилища
+│   │   ├── redis_repository.py      # RedisSessionRepository
+│   │   ├── postgres_repository.py   # PostgresSessionRepository
+│   │   └── composite_repository.py  # CompositeSessionRepository
+│   └── dspy/                        # DSPy интеграция
+│       └── optimizer.py             # DSPyPromptOptimizer
+│
+├── api/                             # Точка входа
+│   └── main.py                      # FastAPI приложение
+│
+├── tests/                           # Unit тесты
+│   └── test_domain_models.py        # 35 тестов
+│
+├── docs/                            # Документация
+│   ├── C1_context.puml / .png       # C1 диаграмма
+│   ├── C2_container.puml / .png     # C2 диаграмма
+│   ├── C3_component.puml / .png     # C3 диаграмма
+│   └── C4_code.puml / .png          # C4 диаграмма
+│
+├── .env.example                     # Шаблон конфигурации
+├── pyproject.toml                   # Конфигурация проекта
+└── README.md                        # Этот файл
+```
 
-**Модули:**
-- `domain/session/` — SessionState, Message, MessageRole, AgentState, ContextVectorizer, SessionRepository
-- `domain/agent/` — Agent, AgentType, AgentTask, AgentRegistry
-- `application/services/` — AgentOrchestrator, RequestContext, ProcessingResult
-- `infrastructure/storage/` — RedisSessionRepository, PostgresSessionRepository, CompositeSessionRepository
-- `infrastructure/dspy/` — DSPyPromptOptimizer, PromptCandidate
-- `api/` — main.py
-- `tests/` — test_domain_models.py
+![C4 Code Diagram](docs/C4_code.png)
 
 ## 🚀 Быстрый старт
 

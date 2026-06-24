@@ -1,4 +1,45 @@
-.venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables
+.env
+
+# IDE
+.vscode/
 .idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Tests
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Diagrams
+docs/*.png
+docs/*.jpg
+docs/*.svg
+
+# Compiled plantuml
+*.class
+
+# Docker
+docker-compose.override.yml
